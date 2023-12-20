@@ -58,6 +58,10 @@ class MainActivity : ComponentActivity() {
 
         SpeechToTextManager.initialise(this)
 
+        var prevAction = ""
+        val rusToEngCommands = mapOf("гулять" to "Walk", "бежать" to "Run", "радоваться" to "Victory", "расстраиваться" to "Defeat", "остановиться" to "Idle")
+        val engToRusCommands = mapOf("Walk" to "Гулять", "Run" to "Бежать", "Victory" to "Радоваться", "Defeat" to "Расстраиваться", "Idle" to "Остановиться", "" to "Неизвестно")
+
         setContent {
             ChessArTheme {
                 // A surface container using the 'background' color from the theme
@@ -79,7 +83,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         var animation by remember {
-                            mutableStateOf("Victory")
+                            mutableStateOf("Defeat")
                         }
 
 //                        ARScreen(currentModel.value)
@@ -129,8 +133,13 @@ class MainActivity : ComponentActivity() {
                             modelNode.value?.loadModelGlbAsync(
                                 glbFileLocation = "models/${currentModel.value}.glb", scaleToUnits = 1f
                             )
-                            modelNode.value?.playAnimation(animation)
+//                            modelNode.value?.playAnimation(animation)
                             Log.e("errorloading", "ERROR LOADING MODEL")
+                        }
+
+                        LaunchedEffect(key1 = animation){
+                            modelNode.value?.stopAnimation(prevAction)
+                            modelNode.value?.playAnimation(animation)
                         }
 
                         Box(modifier = Modifier)
@@ -161,7 +170,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 title = { Text(text = "Animation list") },
-                                text = { Text("Walk\nVictory\nRun\nIdle\nDefeat") },
+                                text = { Text("Гулять\nБежать\nРадоваться\nГрустить\nОстановиться") },
                             )
                         }
 
@@ -191,13 +200,28 @@ class MainActivity : ComponentActivity() {
                         {
                             Box(modifier = Modifier.align(Alignment.TopCenter))
                             {
-                                Text(text = animation,
-                                    style = TextStyle(
-                                        color = Color.White,
-                                        fontSize = 22.sp,
-                                        background = Translucent,
-                                    )
-                                    )
+                                engToRusCommands[animation]?.let {
+                                    if (it == null)
+                                    {
+                                        Text(text = "Неизвестно",
+                                            style = TextStyle(
+                                                color = Color.White,
+                                                fontSize = 22.sp,
+                                                background = Translucent,
+                                            )
+                                        )
+                                    }
+                                    else
+                                    {
+                                        Text(text = it,
+                                            style = TextStyle(
+                                                color = Color.White,
+                                                fontSize = 22.sp,
+                                                background = Translucent,
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -226,13 +250,33 @@ class MainActivity : ComponentActivity() {
 
                         SpeechToTextWrapper(
                             listenEnable = listenEnable,
-                            onSpeechStarted = {  },
-                            onSpeechStopped = { listenEnable= false },
+                            onSpeechStarted = {
+                                println("Speech started")
+                            },
+                            onSpeechStopped = {
+                                println("Speech started")
+                                listenEnable= false
+                            },
                             onSpeechError = {
                                 Log.e("speecherror", it)
+                                Log.e("speecherror", "ERROR VOICE THING")
+                                println("ERROR VOICE THING")
                             },
                             onSpeechResult ={
-                                animation = it.joinToString { "\n" }
+                                if (it.size > 0)
+                                {
+                                    var res = rusToEngCommands[it[0].lowercase()]
+                                    if (res == null)
+                                    {
+                                        prevAction = animation
+                                        animation = ""
+                                    }
+                                    else
+                                    {
+                                        prevAction = animation
+                                        animation = res.toString()
+                                    }
+                                }
                             }
                         )
                     }
@@ -307,80 +351,3 @@ fun CircularImage(
         Image(painter = painterResource(id = imageId), contentDescription = null, modifier = Modifier.size(150.dp), contentScale = ContentScale.FillBounds)
     }
 }
-
-//@Composable
-//fun ARScreen(model: String)
-//{
-//    val nodes = remember("run") {
-//        mutableListOf<ArNode>()
-//    }
-//
-//    val modelNode = remember{
-//        mutableStateOf<ArModelNode?>(null)
-//    }
-//
-//    val placeModelButton = remember {
-//        mutableStateOf(false)
-//    }
-//
-//    Box(modifier = Modifier.fillMaxSize()){
-//        var animation by remember {
-//            mutableStateOf("run")
-//        }
-//
-//        ARScene(
-//            modifier = Modifier.fillMaxSize(),
-//            nodes = nodes,
-//            planeRenderer = true,
-//            onCreate = {arSceneView ->
-//                arSceneView.lightEstimationMode = Config.LightEstimationMode.DISABLED
-//                arSceneView.planeRenderer.isShadowReceiver = false
-//                modelNode.value = ArModelNode(arSceneView.engine, PlacementMode.INSTANT).apply {
-//                    loadModelGlbAsync(
-//                        glbFileLocation = "models/${model}.glb", scaleToUnits = 1f
-//                    )
-//                    {
-//                        onAnchorChanged = {
-//                            placeModelButton.value = !isAnchored
-//                        }
-//                        onHitResult = {node, hitResult ->
-//                            placeModelButton.value = node.isTracking
-//                        }
-//                        playAnimation("Run")
-//                    }
-//                }
-//                nodes.add(modelNode.value!!)
-//            },
-//            onSessionCreate = {
-//                planeRenderer.isVisible = false
-//            }
-//        )
-//    }
-//
-//    Box(modifier = Modifier
-//        .size(200.dp)
-////        .align(Alignment.BottomStart)
-//        .padding(end = 80.dp),
-//        contentAlignment = Alignment.Center
-//    ){
-//        Button(
-//            modifier = Modifier.align(Alignment.TopCenter),
-//            onClick = {
-//                modelNode.value?.anchor()
-//            },
-//            colors = ButtonDefaults.buttonColors(
-//                containerColor = Translucent,
-//                contentColor = Color.White)) {
-//            Text(text = "Place it")
-//        }
-//    }
-//
-//    LaunchedEffect(key1 = model){
-//        modelNode.value?.loadModelGlbAsync(
-//            glbFileLocation = "models/${model}.glb", scaleToUnits = 1f
-//        )
-////        modelNode.value?.stopAnimation("Defeat")
-//        modelNode.value?.playAnimation("Run")
-//        Log.e("errorloading", "ERROR LOADING MODEL")
-//    }
-//}

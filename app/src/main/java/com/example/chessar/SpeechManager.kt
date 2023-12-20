@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 
@@ -111,6 +112,9 @@ fun SpeechToTextWrapper(
                 onSpeechStarted = onSpeechStarted,
                 onSpeechStopped = onSpeechStopped,
                 onSpeechError = { error ->
+                    println("ERROR RECORD")
+                    println(error)
+                    println("ERROR RECORD")
                     // Handle speech recognition errors and pass an error message to the callback
                     val errorMessage: String = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error."
